@@ -10,6 +10,8 @@ const configFields = [
   "llm_timeout_ms",
   "qq_app_id",
   "qq_app_secret",
+  "feishu_app_id",
+  "feishu_app_secret",
   "tg_bot_token",
   "wechat_token",
   "wechat_base_url",
@@ -23,6 +25,26 @@ const configFields = [
 
 let currentPath = "/";
 let wechatLoginPollTimer = null;
+const llmProviderPresets = {
+  openai: {
+    llm_backend_type: "openai_compatible",
+    llm_profile: "openai",
+    llm_base_url: "https://api.openai.com",
+    llm_auth_type: "bearer",
+  },
+  qwen: {
+    llm_backend_type: "openai_compatible",
+    llm_profile: "qwen_compatible",
+    llm_base_url: "https://dashscope.aliyuncs.com",
+    llm_auth_type: "bearer",
+  },
+  anthropic: {
+    llm_backend_type: "anthropic",
+    llm_profile: "anthropic",
+    llm_base_url: "https://api.anthropic.com",
+    llm_auth_type: "none",
+  },
+};
 
 function showBanner(id, message, isError = false) {
   const banner = document.getElementById(id);
@@ -55,6 +77,46 @@ function fillConfigForm(data) {
       input.value = data[field];
     }
   });
+  syncProviderPreset();
+}
+
+function detectProviderPreset() {
+  const backend = document.getElementById("llm_backend_type")?.value.trim();
+  const profile = document.getElementById("llm_profile")?.value.trim();
+  const baseUrl = document.getElementById("llm_base_url")?.value.trim();
+  const authType = document.getElementById("llm_auth_type")?.value.trim();
+
+  const match = Object.entries(llmProviderPresets).find(([, preset]) =>
+    preset.llm_backend_type === backend &&
+    preset.llm_profile === profile &&
+    preset.llm_base_url === baseUrl &&
+    preset.llm_auth_type === authType,
+  );
+
+  return match ? match[0] : "custom";
+}
+
+function syncProviderPreset() {
+  const select = document.getElementById("llm_provider_preset");
+  if (select) {
+    select.value = detectProviderPreset();
+  }
+}
+
+function applyProviderPreset(presetKey) {
+  const preset = llmProviderPresets[presetKey];
+  if (!preset) {
+    syncProviderPreset();
+    return;
+  }
+
+  Object.entries(preset).forEach(([field, value]) => {
+    const input = document.getElementById(field);
+    if (input) {
+      input.value = value;
+    }
+  });
+  syncProviderPreset();
 }
 
 function humanSize(value) {
@@ -114,6 +176,7 @@ async function saveConfig() {
       throw new Error(result.error || "Failed to save settings");
     }
     showBanner("configMessage", result.message || "Settings saved");
+    syncProviderPreset();
   } catch (error) {
     showBanner("configMessage", error.message, true);
   } finally {
@@ -388,6 +451,15 @@ async function deletePath(path) {
 
 function bindEvents() {
   document.getElementById("saveConfigButton").addEventListener("click", saveConfig);
+  document.getElementById("llm_provider_preset").addEventListener("change", (event) => {
+    applyProviderPreset(event.target.value);
+  });
+  ["llm_backend_type", "llm_profile", "llm_base_url", "llm_auth_type"].forEach((field) => {
+    const input = document.getElementById(field);
+    if (input) {
+      input.addEventListener("input", syncProviderPreset);
+    }
+  });
   document.getElementById("wechatLoginStartButton").addEventListener("click", startWechatLogin);
   document.getElementById("wechatLoginCancelButton").addEventListener("click", cancelWechatLogin);
   document.getElementById("refreshFilesButton").addEventListener("click", () => loadFiles().catch((error) => {

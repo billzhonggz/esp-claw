@@ -46,29 +46,43 @@
                         <input id="llm_api_key" name="llm_api_key" type="password">
                     </label>
                     <label>
-                        <span>LLM Backend</span>
-                        <input id="llm_backend_type" name="llm_backend_type" placeholder="openai_compatible / custom">
-                    </label>
-                    <label>
-                        <span>LLM Profile</span>
-                        <input id="llm_profile" name="llm_profile" placeholder="openai / qwen_compatible">
+                        <span>LLM Provider</span>
+                        <select id="llm_provider_preset" name="llm_provider_preset">
+                            <option value="openai">OpenAI</option>
+                            <option value="qwen">Qwen Compatible</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="custom">Custom</option>
+                        </select>
                     </label>
                     <label>
                         <span>LLM Model</span>
                         <input id="llm_model" name="llm_model">
                     </label>
                     <label>
-                        <span>LLM Base URL</span>
-                        <input id="llm_base_url" name="llm_base_url" placeholder="https://api.openai.com">
-                    </label>
-                    <label>
-                        <span>LLM Auth Type</span>
-                        <input id="llm_auth_type" name="llm_auth_type" placeholder="bearer / api-key / none">
-                    </label>
-                    <label>
                         <span>LLM Timeout (ms)</span>
                         <input id="llm_timeout_ms" name="llm_timeout_ms" placeholder="120000">
                     </label>
+                    <details class="advanced-panel" style="grid-column: 1 / -1;">
+                        <summary>Advanced LLM options</summary>
+                        <div class="form-grid advanced-grid">
+                            <label>
+                                <span>LLM Backend</span>
+                                <input id="llm_backend_type" name="llm_backend_type" placeholder="openai_compatible / anthropic / custom">
+                            </label>
+                            <label>
+                                <span>LLM Profile</span>
+                                <input id="llm_profile" name="llm_profile" placeholder="openai / qwen_compatible / anthropic">
+                            </label>
+                            <label>
+                                <span>LLM Base URL</span>
+                                <input id="llm_base_url" name="llm_base_url" placeholder="https://api.openai.com">
+                            </label>
+                            <label>
+                                <span>LLM Auth Type</span>
+                                <input id="llm_auth_type" name="llm_auth_type" placeholder="bearer / api-key / none">
+                            </label>
+                        </div>
+                    </details>
                     <label>
                         <span>QQ App ID</span>
                         <input id="qq_app_id" name="qq_app_id">
@@ -76,6 +90,14 @@
                     <label>
                         <span>QQ App Secret</span>
                         <input id="qq_app_secret" name="qq_app_secret" type="password">
+                    </label>
+                    <label>
+                        <span>Feishu App ID</span>
+                        <input id="feishu_app_id" name="feishu_app_id">
+                    </label>
+                    <label>
+                        <span>Feishu App Secret</span>
+                        <input id="feishu_app_secret" name="feishu_app_secret" type="password">
                     </label>
                     <label>
                         <span>Telegram Bot Token</span>
@@ -131,7 +153,7 @@
                         <input id="time_timezone" name="time_timezone" placeholder="UTC0">
                     </label>
                 </form>
-                <p class="note">Changes are stored in NVS. Restart the device after updating Wi-Fi or core LLM settings.</p>
+                <p class="note">Changes are stored in NVS. Choose an LLM provider first, then fill the shared API key and model fields. OpenAI, Qwen, and Anthropic all reuse the same LLM settings. Restart the device after updating Wi-Fi, Feishu, or core LLM settings.</p>
             </section>
 
             <section class="panel">

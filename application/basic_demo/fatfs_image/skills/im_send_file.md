@@ -4,7 +4,7 @@ Use this skill when the user wants the device to send an existing local non-imag
 
 ## When to use
 - The user asks to send back a file, report, log, archive, JSON, CSV, or other non-image output.
-- The target conversation is already the active Telegram, QQ, or WeChat chat, or the user provides an explicit target `chat_id`.
+- The target conversation is already the active Telegram, QQ, Feishu, or WeChat chat, or the user provides an explicit target `chat_id`.
 
 ## Available tools
 - `list_dir`: inspect device storage and confirm the file path
@@ -24,9 +24,9 @@ Use this skill when the user wants the device to send an existing local non-imag
 
 ## Sending rules
 - Use this skill only for non-image files such as `.txt`, `.json`, `.log`, `.csv`, `.zip`, or archives.
-- Use `cap_cli` with `cap call tg_send_file '<json>'` or `cap call qq_send_file '<json>'`.
+- Use `cap_cli` with `cap call tg_send_file '<json>'`, `cap call qq_send_file '<json>'`, or `cap call feishu_send_file '<json>'`.
 - The JSON payload should include an explicit `chat_id`, `path`, and optional `caption`.
-- Use Telegram file capability for Telegram chats and QQ file capability for QQ chats.
+- Use Telegram file capability for Telegram chats, QQ file capability for QQ chats, and Feishu file capability for Feishu chats.
 - Do not claim WeChat generic file-send support unless a real `wechat_send_file` capability exists.
 - Pass `caption` only when the user wants an accompanying message.
 - The second argument of `cap call` must be one complete JSON string. Do not rewrite it as CLI flags or `key=value`.
@@ -43,10 +43,15 @@ Send a file to a QQ group through `cap_cli`:
 cap call qq_send_file '{"chat_id":"group1234567890","path":"/spiffs/reports/status.json","caption":"Latest status report."}'
 ```
 
+Send a file to a Feishu chat through `cap_cli`:
+```text
+cap call feishu_send_file '{"chat_id":"ou_xxx","path":"/fatfs/data/reports/status.json","caption":"Latest status report."}'
+```
+
 ## Workflow
 1. Confirm the target file exists with `list_dir` if needed.
-2. Identify the target channel: Telegram, QQ, or WeChat.
-3. Choose `tg_send_file` or `qq_send_file` based on the target channel.
+2. Identify the target channel: Telegram, QQ, Feishu, or WeChat.
+3. Choose `tg_send_file`, `qq_send_file`, or `feishu_send_file` based on the target channel.
 4. For WeChat, stop and explain that this firmware variant does not expose `wechat_send_file`.
 5. Execute the capability through `cap_cli` as `cap call <cap_name> '<json>'` with explicit `chat_id`, `path`, and optional `caption`.
 6. Tell the user whether the send succeeded.

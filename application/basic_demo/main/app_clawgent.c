@@ -5,11 +5,14 @@
  */
 #include "app_clawgent.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "basic_demo_lua_modules.h"
 #include "cap_cli.h"
 #include "cap_files.h"
+#include "cap_im_feishu.h"
 #include "cap_im_qq.h"
 #include "cap_im_tg.h"
 #include "cap_im_wechat.h"
@@ -100,7 +103,7 @@ static esp_err_t init_skills(void)
 static esp_err_t init_capabilities(const basic_demo_settings_t *settings)
 {
     claw_cap_config_t cap_config = {
-        .max_capabilities = 32,
+        .max_capabilities = 48,
         .max_groups = 16,
     };
 
@@ -215,12 +218,27 @@ static esp_err_t init_capabilities(const basic_demo_settings_t *settings)
     }),
     TAG,
     "Failed to set WeChat attachment config");
+    ESP_RETURN_ON_ERROR(cap_im_feishu_set_attachment_config(
+    &(cap_im_feishu_attachment_config_t) {
+        .storage_root_dir = BASIC_DEMO_IM_ATTACHMENT_ROOT,
+        .max_inbound_file_bytes = BASIC_DEMO_IM_ATTACHMENT_MAX_BYTES,
+        .enable_inbound_attachments = true,
+    }),
+    TAG,
+    "Failed to set Feishu attachment config");
 
     if (settings->qq_app_id[0] && settings->qq_app_secret[0]) {
         ESP_RETURN_ON_ERROR(cap_im_qq_set_credentials(settings->qq_app_id,
                                                       settings->qq_app_secret),
                             TAG,
                             "Failed to set QQ credentials");
+    }
+
+    if (settings->feishu_app_id[0] && settings->feishu_app_secret[0]) {
+        ESP_RETURN_ON_ERROR(cap_im_feishu_set_credentials(settings->feishu_app_id,
+                                                          settings->feishu_app_secret),
+                            TAG,
+                            "Failed to set Feishu credentials");
     }
 
     if (settings->tg_bot_token[0]) {
@@ -254,6 +272,9 @@ static esp_err_t init_capabilities(const basic_demo_settings_t *settings)
     }
 
     ESP_RETURN_ON_ERROR(cap_im_qq_register_group(), TAG, "Failed to register QQ cap");
+    ESP_RETURN_ON_ERROR(cap_im_feishu_register_group(),
+                        TAG,
+                        "Failed to register Feishu cap");
     ESP_RETURN_ON_ERROR(cap_im_tg_register_group(),
                         TAG,
                         "Failed to register Telegram cap");
@@ -293,22 +314,55 @@ static esp_err_t init_capabilities(const basic_demo_settings_t *settings)
     return ESP_OK;
 }
 
+static const char *basic_demo_llm_provider_name(const basic_demo_settings_t *settings)
+{
+    if (!settings) {
+        return "unknown";
+    }
+
+    if ((settings->llm_backend_type[0] && strcmp(settings->llm_backend_type, "anthropic") == 0) ||
+            (settings->llm_profile[0] && strcmp(settings->llm_profile, "anthropic") == 0)) {
+        return "Anthropic";
+    }
+    if (settings->llm_profile[0] &&
+            (strcmp(settings->llm_profile, "qwen") == 0 ||
+             strcmp(settings->llm_profile, "qwen_compatible") == 0)) {
+        return "Qwen Compatible";
+    }
+    if (settings->llm_profile[0] && strcmp(settings->llm_profile, "openai") == 0) {
+        return "OpenAI";
+    }
+    return "Custom";
+}
+
+static bool basic_demo_llm_is_configured(const basic_demo_settings_t *settings)
+{
+    return settings &&
+           settings->llm_api_key[0] &&
+           settings->llm_model[0] &&
+           settings->llm_profile[0];
+}
+
 esp_err_t app_clawgent_start(const basic_demo_settings_t *settings)
 {
     claw_core_config_t core_config = {0};
     claw_event_router_config_t router_config = {
         .rules_path = BASIC_DEMO_AUTOMATION_RULES_PATH,
-        .task_stack_size = 6144,
+        .task_stack_size = 12 * 1024,
         .task_priority = 5,
         .task_core = tskNO_AFFINITY,
         .core_submit_timeout_ms = 1000,
         .core_receive_timeout_ms = 130000,
-        .default_route_messages_to_agent = true,
+        .default_route_messages_to_agent = false,
     };
+    bool llm_enabled = false;
 
     if (!settings) {
         return ESP_ERR_INVALID_ARG;
     }
+
+    llm_enabled = basic_demo_llm_is_configured(settings);
+    router_config.default_route_messages_to_agent = llm_enabled;
 
     ESP_RETURN_ON_ERROR(claw_event_router_init(&router_config),
                         TAG,
@@ -319,6 +373,9 @@ esp_err_t app_clawgent_start(const basic_demo_settings_t *settings)
     ESP_RETURN_ON_ERROR(claw_event_router_register_outbound_binding("qq", "qq_send_message"),
                         TAG,
                         "Failed to bind QQ outbound");
+    ESP_RETURN_ON_ERROR(claw_event_router_register_outbound_binding("feishu", "feishu_send_message"),
+                        TAG,
+                        "Failed to bind Feishu outbound");
     ESP_RETURN_ON_ERROR(claw_event_router_register_outbound_binding("telegram", "tg_send_message"),
                         TAG,
                         "Failed to bind Telegram outbound");
@@ -344,23 +401,39 @@ esp_err_t app_clawgent_start(const basic_demo_settings_t *settings)
     core_config.response_queue_len = 4;
     core_config.max_context_providers = 5;
 
-    ESP_RETURN_ON_ERROR(claw_core_init(&core_config), TAG, "Failed to init claw_core");
-    ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_memory_long_term_provider),
-                        TAG,
-                        "Failed to add long-term memory provider");
-    ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_memory_session_history_provider),
-                        TAG,
-                        "Failed to add session history provider");
-    ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_skill_skills_list_provider),
-                        TAG,
-                        "Failed to add skills list provider");
-    ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_skill_active_skill_docs_provider),
-                        TAG,
-                        "Failed to add active skill docs provider");
-    ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_cap_tools_provider),
-                        TAG,
-                        "Failed to add cap tools provider");
-    ESP_RETURN_ON_ERROR(claw_core_start(), TAG, "Failed to start claw_core");
+    if (!llm_enabled) {
+        ESP_LOGW(TAG,
+                 "LLM is not fully configured. Provider=%s profile=%s model=%s. "
+                 "The demo will start without claw_core; ask, auto-route-to-agent, and image analysis stay disabled until LLM API key, profile, and model are set.",
+                 basic_demo_llm_provider_name(settings),
+                 settings->llm_profile[0] ? settings->llm_profile : "(empty)",
+                 settings->llm_model[0] ? settings->llm_model : "(empty)");
+    } else {
+        ESP_LOGI(TAG,
+                 "Starting LLM provider=%s profile=%s backend=%s model=%s",
+                 basic_demo_llm_provider_name(settings),
+                 settings->llm_profile,
+                 settings->llm_backend_type[0] ? settings->llm_backend_type : "(default)",
+                 settings->llm_model);
+        ESP_RETURN_ON_ERROR(claw_core_init(&core_config), TAG, "Failed to init claw_core");
+        ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_memory_long_term_provider),
+                            TAG,
+                            "Failed to add long-term memory provider");
+        ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_memory_session_history_provider),
+                            TAG,
+                            "Failed to add session history provider");
+        ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_skill_skills_list_provider),
+                            TAG,
+                            "Failed to add skills list provider");
+        ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_skill_active_skill_docs_provider),
+                            TAG,
+                            "Failed to add active skill docs provider");
+        ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&claw_cap_tools_provider),
+                            TAG,
+                            "Failed to add cap tools provider");
+        ESP_RETURN_ON_ERROR(claw_core_start(), TAG, "Failed to start claw_core");
+    }
+
     ESP_RETURN_ON_ERROR(claw_event_router_start(), TAG, "Failed to start event router");
     ESP_RETURN_ON_ERROR(basic_demo_cli_start(), TAG, "Failed to start CLI");
 

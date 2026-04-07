@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "esp_err.h"
@@ -23,6 +24,7 @@ typedef struct {
 
 esp_err_t cap_mcp_server_register_group(void);
 esp_err_t cap_mcp_server_set_config(const cap_mcp_server_config_t *config);
+esp_err_t cap_mcp_server_get_config(cap_mcp_server_config_t *config, bool *started);
 
 #ifdef __cplusplus
 }

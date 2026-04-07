@@ -147,11 +147,13 @@ label {
 }
 
 input,
+select,
 button {
     font: inherit;
 }
 
-input {
+input,
+select {
     width: 100%;
     padding: 13px 14px;
     border: 1px solid var(--line);
@@ -160,9 +162,27 @@ input {
     color: var(--ink);
 }
 
-input:focus {
+input:focus,
+select:focus {
     outline: 2px solid rgba(182, 70, 31, 0.22);
     border-color: rgba(182, 70, 31, 0.35);
+}
+
+.advanced-panel {
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.advanced-panel summary {
+    cursor: pointer;
+    color: var(--accent-deep);
+    font-weight: 600;
+}
+
+.advanced-grid {
+    margin-top: 14px;
 }
 
 button {

@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "llm/backends/claw_llm_backend_custom.h"
+#include "llm/backends/claw_llm_backend_anthropic.h"
 #include "llm/backends/claw_llm_backend_openai_compatible.h"
 
 #define CLAW_LLM_DEFAULT_TIMEOUT_MS (120 * 1000)
@@ -59,6 +60,18 @@ static const claw_llm_model_profile_t s_profiles[] = {
         .image_remote_url_only = false,
     },
     {
+        .id = "anthropic",
+        .default_backend_type = "anthropic",
+        .default_base_url = "https://api.anthropic.com",
+        .chat_path = "/v1/messages",
+        .max_tokens_field = "max_tokens",
+        .default_timeout_ms = CLAW_LLM_DEFAULT_TIMEOUT_MS,
+        .default_image_max_bytes = CLAW_LLM_DEFAULT_IMAGE_MAX_BYTES,
+        .supports_tools = true,
+        .supports_vision = true,
+        .image_remote_url_only = false,
+    },
+    {
         .id = "custom_backend",
         .default_backend_type = "custom",
         .default_base_url = "",
@@ -80,6 +93,9 @@ static const claw_llm_backend_vtable_t *find_backend(const char *id)
     if (strcmp(id, "custom") == 0) {
         return claw_llm_backend_custom_vtable();
     }
+    if (strcmp(id, "anthropic") == 0) {
+        return claw_llm_backend_anthropic_vtable();
+    }
     return NULL;
 }
 
@@ -98,6 +114,9 @@ static const char *normalize_profile_id(const char *profile_id)
     }
     if (strcmp(profile_id, "openai") == 0) {
         return "openai";
+    }
+    if (strcmp(profile_id, "claude") == 0) {
+        return "anthropic";
     }
     return profile_id;
 }

@@ -89,11 +89,18 @@ typedef struct {
 } claw_llm_media_request_t;
 
 typedef struct {
+    const char *name;
+    const char *value;
+} claw_llm_http_header_t;
+
+typedef struct {
     const char *url;
     const char *body;
     const char *api_key;
     const char *auth_type;
     uint32_t timeout_ms;
+    const claw_llm_http_header_t *headers;
+    size_t header_count;
 } claw_llm_http_json_request_t;
 
 typedef struct {

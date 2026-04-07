@@ -190,6 +190,8 @@ static esp_err_t settings_to_json(httpd_req_t *req)
     json_add_string(root, "llm_timeout_ms", settings.llm_timeout_ms);
     json_add_string(root, "qq_app_id", settings.qq_app_id);
     json_add_string(root, "qq_app_secret", settings.qq_app_secret);
+    json_add_string(root, "feishu_app_id", settings.feishu_app_id);
+    json_add_string(root, "feishu_app_secret", settings.feishu_app_secret);
     json_add_string(root, "tg_bot_token", settings.tg_bot_token);
     json_add_string(root, "wechat_token", settings.wechat_token);
     json_add_string(root, "wechat_base_url", settings.wechat_base_url);
@@ -321,6 +323,8 @@ static esp_err_t config_post_handler(httpd_req_t *req)
     json_read_string(root, "llm_timeout_ms", settings.llm_timeout_ms, sizeof(settings.llm_timeout_ms));
     json_read_string(root, "qq_app_id", settings.qq_app_id, sizeof(settings.qq_app_id));
     json_read_string(root, "qq_app_secret", settings.qq_app_secret, sizeof(settings.qq_app_secret));
+    json_read_string(root, "feishu_app_id", settings.feishu_app_id, sizeof(settings.feishu_app_id));
+    json_read_string(root, "feishu_app_secret", settings.feishu_app_secret, sizeof(settings.feishu_app_secret));
     json_read_string(root, "tg_bot_token", settings.tg_bot_token, sizeof(settings.tg_bot_token));
     json_read_string(root, "wechat_token", settings.wechat_token, sizeof(settings.wechat_token));
     json_read_string(root, "wechat_base_url", settings.wechat_base_url, sizeof(settings.wechat_base_url));

@@ -9,7 +9,9 @@ idf_component_register(
         "src"
     REQUIRES
         claw_cap
+        cap_mcp_server
         esp_http_client
+        esp_netif
         json
         mdns
         console

@@ -492,3 +492,21 @@ esp_err_t cap_mcp_server_set_config(const cap_mcp_server_config_t *config)
 
     return ESP_OK;
 }
+
+esp_err_t cap_mcp_server_get_config(cap_mcp_server_config_t *config, bool *started)
+{
+    if (!config) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    config->hostname = s_config.hostname;
+    config->instance_name = s_config.instance_name;
+    config->endpoint = s_config.endpoint;
+    config->server_port = s_config.server_port;
+    config->ctrl_port = s_config.ctrl_port;
+    if (started) {
+        *started = s_started;
+    }
+
+    return ESP_OK;
+}

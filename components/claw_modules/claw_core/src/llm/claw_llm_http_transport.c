@@ -224,6 +224,18 @@ esp_err_t claw_llm_http_post_json(const claw_llm_http_json_request_t *request,
     if (auth_header_value) {
         esp_http_client_set_header(client, auth_header_name(request->auth_type), auth_header_value);
     }
+    if (request->headers && request->header_count > 0) {
+        size_t i;
+
+        for (i = 0; i < request->header_count; i++) {
+            const claw_llm_http_header_t *header = &request->headers[i];
+
+            if (!header->name || !header->name[0] || !header->value) {
+                continue;
+            }
+            esp_http_client_set_header(client, header->name, header->value);
+        }
+    }
     esp_http_client_set_post_field(client, request->body, (int)strlen(request->body));
 
     err = esp_http_client_perform(client);

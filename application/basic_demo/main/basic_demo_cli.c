@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "cap_im_qq.h"
+#include "cmd_cap_im_feishu.h"
 #include "cmd_cap_llm_inspect.h"
 #include "cmd_cap_mcp_client.h"
 #include "cmd_cap_mcp_server.h"
@@ -687,6 +688,7 @@ esp_err_t basic_demo_cli_start(void)
 
     esp_console_register_help_command();
     register_cap_im_qq();
+    register_cap_im_feishu();
     register_cap_im_tg();
     register_cap_im_wechat();
     register_cap_lua();

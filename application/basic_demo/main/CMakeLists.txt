@@ -12,6 +12,7 @@ idf_component_register(
     REQUIRES
         cap_cli
         cap_files
+        cap_im_feishu
         cap_im_qq
         cap_im_tg
         cap_im_wechat
