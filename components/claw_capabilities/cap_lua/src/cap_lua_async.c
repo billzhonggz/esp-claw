@@ -223,6 +223,8 @@ esp_err_t cap_lua_async_submit(const cap_lua_async_job_t *job,
                                size_t job_id_out_size)
 {
     cap_lua_job_ctx_t *ctx = NULL;
+    char submitted_job_id[sizeof(ctx->job_id)] = {0};
+    char submitted_path[sizeof(ctx->path)] = {0};
     int slot = -1;
     time_t now = time(NULL);
 
@@ -240,6 +242,8 @@ esp_err_t cap_lua_async_submit(const cap_lua_async_job_t *job,
 
     cap_lua_generate_job_id(ctx->job_id, sizeof(ctx->job_id));
     strlcpy(ctx->path, job->path, sizeof(ctx->path));
+    strlcpy(submitted_job_id, ctx->job_id, sizeof(submitted_job_id));
+    strlcpy(submitted_path, ctx->path, sizeof(submitted_path));
     ctx->timeout_ms = job->timeout_ms;
     if (job->args_json) {
         ctx->args_json = strdup(job->args_json);
@@ -316,10 +320,10 @@ esp_err_t cap_lua_async_submit(const cap_lua_async_job_t *job,
     }
 
     if (job_id_out && job_id_out_size > 0) {
-        strlcpy(job_id_out, ctx->job_id, job_id_out_size);
+        strlcpy(job_id_out, submitted_job_id, job_id_out_size);
     }
 
-    ESP_LOGI(TAG, "Queued Lua async job %s for %s", ctx->job_id, ctx->path);
+    ESP_LOGI(TAG, "Queued Lua async job %s for %s", submitted_job_id, submitted_path);
     return ESP_OK;
 }
 
