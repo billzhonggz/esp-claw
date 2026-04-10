@@ -13,14 +13,23 @@
 #include <time.h>
 
 #include "claw_cap.h"
+#include "esp_check.h"
 #include "esp_crt_bundle.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
 
 static const char *TAG = "cap_time";
 
 #define CAP_TIME_SOURCE_URL     "https://api.telegram.org/"
 #define CAP_TIME_HTTP_TIMEOUT_MS 10000
+#define CAP_TIME_MIN_VALID_EPOCH 1704067200
+#define CAP_TIME_DEFAULT_DISCONNECTED_RETRY_MS 5000
+#define CAP_TIME_DEFAULT_SYNC_RETRY_MS        30000
+#define CAP_TIME_SYNC_TASK_STACK_SIZE          6144
+#define CAP_TIME_SYNC_TASK_PRIORITY               5
 
 static const char *s_month_names[] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -35,6 +44,20 @@ typedef struct {
 static cap_time_state_t s_time = {
     .timezone = "UTC0",
 };
+static SemaphoreHandle_t s_time_mutex = NULL;
+static struct {
+    TaskHandle_t task_handle;
+    cap_time_sync_service_config_t config;
+    bool running;
+} s_time_service = {0};
+
+static esp_err_t cap_time_ensure_mutex(void)
+{
+    if (!s_time_mutex) {
+        s_time_mutex = xSemaphoreCreateMutex();
+    }
+    return s_time_mutex ? ESP_OK : ESP_ERR_NO_MEM;
+}
 
 static int cap_time_month_to_index(const char *month)
 {
@@ -176,6 +199,88 @@ static esp_err_t cap_time_fetch_current(char *output, size_t output_size)
     return ESP_OK;
 }
 
+esp_err_t cap_time_sync_now(char *output, size_t output_size)
+{
+    esp_err_t err;
+
+    if (!output || output_size == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    ESP_RETURN_ON_ERROR(cap_time_ensure_mutex(), TAG, "Failed to create time mutex");
+    xSemaphoreTake(s_time_mutex, portMAX_DELAY);
+    err = cap_time_fetch_current(output, output_size);
+    xSemaphoreGive(s_time_mutex);
+    return err;
+}
+
+bool cap_time_is_valid(void)
+{
+    time_t now = time(NULL);
+
+    return now >= CAP_TIME_MIN_VALID_EPOCH;
+}
+
+static bool cap_time_network_ready(void)
+{
+    if (!s_time_service.config.network_ready) {
+        return true;
+    }
+
+    return s_time_service.config.network_ready(s_time_service.config.network_ready_ctx);
+}
+
+static void cap_time_notify_sync_success(bool had_valid_time)
+{
+    if (s_time_service.config.on_sync_success) {
+        s_time_service.config.on_sync_success(had_valid_time,
+                                              s_time_service.config.on_sync_success_ctx);
+    }
+}
+
+static void cap_time_sync_service_task(void *arg)
+{
+    char output[256];
+
+    (void)arg;
+
+    while (s_time_service.running) {
+        bool time_valid;
+        uint32_t delay_ms;
+
+        if (!cap_time_network_ready()) {
+            delay_ms = s_time_service.config.disconnected_retry_ms;
+            vTaskDelay(pdMS_TO_TICKS(delay_ms));
+            continue;
+        }
+
+        time_valid = cap_time_is_valid();
+        if (!time_valid) {
+            bool had_valid_time = false;
+            esp_err_t err;
+
+            output[0] = '\0';
+            err = cap_time_sync_now(output, sizeof(output));
+            if (err == ESP_OK) {
+                ESP_LOGI(TAG, "Time sync succeeded: %s", output);
+                cap_time_notify_sync_success(had_valid_time);
+                break;
+            }
+
+            ESP_LOGW(TAG, "Time sync failed: %s", esp_err_to_name(err));
+            delay_ms = s_time_service.config.sync_retry_ms;
+            vTaskDelay(pdMS_TO_TICKS(delay_ms));
+            continue;
+        }
+
+        cap_time_notify_sync_success(false);
+        break;
+    }
+
+    s_time_service.running = false;
+    s_time_service.task_handle = NULL;
+    vTaskDelete(NULL);
+}
+
 static esp_err_t cap_time_execute(const char *input_json,
                                   const claw_cap_call_context_t *ctx,
                                   char *output,
@@ -190,7 +295,7 @@ static esp_err_t cap_time_execute(const char *input_json,
         return ESP_ERR_INVALID_ARG;
     }
 
-    err = cap_time_fetch_current(output, output_size);
+    err = cap_time_sync_now(output, output_size);
     if (err != ESP_OK) {
         snprintf(output, output_size, "Error: failed to fetch time (%s)", esp_err_to_name(err));
         ESP_LOGE(TAG, "%s", output);
@@ -231,12 +336,77 @@ esp_err_t cap_time_register_group(void)
 
 esp_err_t cap_time_set_timezone(const char *timezone)
 {
+    esp_err_t err;
+
     if (!timezone || !timezone[0]) {
         return ESP_ERR_INVALID_ARG;
     }
 
+    err = cap_time_ensure_mutex();
+    if (err != ESP_OK) {
+        return err;
+    }
+    xSemaphoreTake(s_time_mutex, portMAX_DELAY);
     strlcpy(s_time.timezone, timezone, sizeof(s_time.timezone));
     setenv("TZ", s_time.timezone, 1);
     tzset();
+    xSemaphoreGive(s_time_mutex);
+    return ESP_OK;
+}
+
+esp_err_t cap_time_sync_service_start(const cap_time_sync_service_config_t *config)
+{
+    BaseType_t ok;
+
+    if (!config) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (s_time_service.task_handle || s_time_service.running) {
+        return ESP_OK;
+    }
+
+    memset(&s_time_service.config, 0, sizeof(s_time_service.config));
+    s_time_service.config = *config;
+    if (s_time_service.config.disconnected_retry_ms == 0) {
+        s_time_service.config.disconnected_retry_ms = CAP_TIME_DEFAULT_DISCONNECTED_RETRY_MS;
+    }
+    if (s_time_service.config.sync_retry_ms == 0) {
+        s_time_service.config.sync_retry_ms = CAP_TIME_DEFAULT_SYNC_RETRY_MS;
+    }
+
+    if (cap_time_is_valid()) {
+        cap_time_notify_sync_success(false);
+        return ESP_OK;
+    }
+
+    s_time_service.running = true;
+
+    ok = xTaskCreate(cap_time_sync_service_task,
+                     "cap_time_sync",
+                     CAP_TIME_SYNC_TASK_STACK_SIZE,
+                     NULL,
+                     CAP_TIME_SYNC_TASK_PRIORITY,
+                     &s_time_service.task_handle);
+    if (ok != pdPASS || !s_time_service.task_handle) {
+        s_time_service.running = false;
+        s_time_service.task_handle = NULL;
+        return ESP_ERR_NO_MEM;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t cap_time_sync_service_stop(void)
+{
+    TaskHandle_t task = s_time_service.task_handle;
+
+    s_time_service.running = false;
+    if (!task) {
+        return ESP_OK;
+    }
+
+    while (s_time_service.task_handle == task) {
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
     return ESP_OK;
 }

@@ -10,7 +10,6 @@
 
 #include "argtable3/argtable3.h"
 #include "cap_time.h"
-#include "claw_cap.h"
 #include "esp_console.h"
 
 static struct {
@@ -24,9 +23,6 @@ static int time_func(int argc, char **argv)
 {
     char output[256] = {0};
     esp_err_t err;
-    claw_cap_call_context_t ctx = {
-        .caller = CLAW_CAP_CALLER_CONSOLE,
-    };
     int nerrors = arg_parse(argc, argv, (void **)&time_args);
     int operation_count;
 
@@ -57,9 +53,9 @@ static int time_func(int argc, char **argv)
         return 0;
     }
 
-    err = claw_cap_call("get_current_time", "{}", &ctx, output, sizeof(output));
+    err = cap_time_sync_now(output, sizeof(output));
     if (err != ESP_OK) {
-        printf("%s\n", output[0] ? output : esp_err_to_name(err));
+        printf("time sync failed: %s\n", esp_err_to_name(err));
         return 1;
     }
 

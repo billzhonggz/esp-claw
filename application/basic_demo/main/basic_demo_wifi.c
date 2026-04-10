@@ -40,6 +40,7 @@ static void wifi_event_handler(void *arg,
 
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         s_connected = false;
+        strlcpy(s_ip_addr, "0.0.0.0", sizeof(s_ip_addr));
         if (s_retry_count < WIFI_MAX_RETRY) {
             s_retry_count++;
             ESP_LOGW(TAG, "Disconnected, retry %d/%d", s_retry_count, WIFI_MAX_RETRY);

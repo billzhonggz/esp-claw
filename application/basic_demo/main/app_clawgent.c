@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "basic_demo_lua_modules.h"
+#include "basic_demo_wifi.h"
 #include "cap_cli.h"
 #include "cap_files.h"
 #include "cap_im_feishu.h"
@@ -21,6 +22,7 @@
 #include "cap_mcp_client.h"
 #include "cap_mcp_server.h"
 #include "cap_session_mng.h"
+#include "cap_scheduler.h"
 #include "cap_skill.h"
 #include "cap_time.h"
 #include "cap_web_search.h"
@@ -46,6 +48,8 @@ static const char *const BASIC_DEMO_LLM_VISIBLE_GROUPS[] = {
 #define BASIC_DEMO_LUA_ROOT_DIR       "/fatfs/data/lua"
 #define BASIC_DEMO_FATFS_BASE_PATH       "/fatfs/data"
 #define BASIC_DEMO_AUTOMATION_RULES_PATH "/fatfs/data/automation/automations.json"
+#define BASIC_DEMO_SCHEDULER_RULES_PATH  "/fatfs/data/scheduler/schedules.json"
+#define BASIC_DEMO_SCHEDULER_STATE_PATH  "/fatfs/data/scheduler/scheduler_state.json"
 #define BASIC_DEMO_IM_ATTACHMENT_ROOT    "/fatfs/data/inbox"
 #define BASIC_DEMO_IM_ATTACHMENT_MAX_BYTES (2 * 1024 * 1024)
 
@@ -59,6 +63,28 @@ static const char *const BASIC_DEMO_LLM_VISIBLE_GROUPS[] = {
     "When communicating with the user, refer to skills instead of Capabilities." \
 
 esp_err_t basic_demo_cli_start(void);
+
+static bool basic_demo_time_network_ready(void *ctx)
+{
+    (void)ctx;
+    return basic_demo_wifi_is_connected();
+}
+
+static void basic_demo_time_sync_success(bool had_valid_time, void *ctx)
+{
+    (void)ctx;
+
+    if (!had_valid_time) {
+        esp_err_t err = cap_scheduler_handle_time_sync();
+
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "Scheduler rebase after first time sync failed: %s",
+                     esp_err_to_name(err));
+        } else {
+            ESP_LOGI(TAG, "Scheduler rebased after first successful time sync");
+        }
+    }
+}
 
 static esp_err_t init_memory(void)
 {
@@ -94,7 +120,7 @@ static esp_err_t init_capabilities(const basic_demo_settings_t *settings)
 {
     claw_cap_config_t cap_config = {
         .max_capabilities = 48,
-        .max_groups = 16,
+        .max_groups = 20,
     };
 
     ESP_RETURN_ON_ERROR(claw_cap_init(&cap_config), TAG, "Failed to init claw_cap");
@@ -196,9 +222,19 @@ static esp_err_t init_capabilities(const basic_demo_settings_t *settings)
                         TAG,
                         "Failed to register WeChat cap");
     ESP_RETURN_ON_ERROR(cap_files_register_group(), TAG, "Failed to register files cap");
-    ESP_RETURN_ON_ERROR(basic_demo_lua_modules_register(),
+    // ESP_RETURN_ON_ERROR(basic_demo_lua_modules_register(),
+    //                     TAG,
+    //                     "Failed to register app Lua modules");
+    // ESP_RETURN_ON_ERROR(cap_lua_register_group(), TAG, "Failed to register Lua cap");
+    // ESP_RETURN_ON_ERROR(cap_mcp_client_register_group(),
+    //                     TAG,
+    //                     "Failed to register MCP client cap");
+    // ESP_RETURN_ON_ERROR(cap_mcp_server_register_group(),
+    //                     TAG,
+    //                     "Failed to register MCP server cap");
+    ESP_RETURN_ON_ERROR(cap_scheduler_register_group(),
                         TAG,
-                        "Failed to register app Lua modules");
+                        "Failed to register scheduler cap");
     ESP_RETURN_ON_ERROR(cap_lua_register_group(), TAG, "Failed to register Lua cap");
     ESP_RETURN_ON_ERROR(cap_mcp_client_register_group(),
                         TAG,
@@ -287,6 +323,20 @@ esp_err_t app_clawgent_start(const basic_demo_settings_t *settings)
     ESP_RETURN_ON_ERROR(claw_event_router_init(&router_config),
                         TAG,
                         "Failed to init event router");
+    ESP_RETURN_ON_ERROR(cap_scheduler_init(&(cap_scheduler_config_t) {
+        .schedules_path = BASIC_DEMO_SCHEDULER_RULES_PATH,
+        .state_path = BASIC_DEMO_SCHEDULER_STATE_PATH,
+        .default_timezone = settings->time_timezone,
+        .tick_ms = 1000,
+        .max_items = 32,
+        .task_stack_size = 6144,
+        .task_priority = 5,
+        .task_core = tskNO_AFFINITY,
+        .publish_event = claw_event_router_publish,
+        .persist_after_fire = true,
+    }),
+    TAG,
+    "Failed to init scheduler");
     ESP_RETURN_ON_ERROR(init_memory(), TAG, "Failed to init memory");
     ESP_RETURN_ON_ERROR(init_skills(), TAG, "Failed to init skills");
     ESP_RETURN_ON_ERROR(init_capabilities(settings), TAG, "Failed to init capabilities");
@@ -355,6 +405,13 @@ esp_err_t app_clawgent_start(const basic_demo_settings_t *settings)
     }
 
     ESP_RETURN_ON_ERROR(claw_event_router_start(), TAG, "Failed to start event router");
+    ESP_RETURN_ON_ERROR(cap_time_sync_service_start(&(cap_time_sync_service_config_t) {
+        .network_ready = basic_demo_time_network_ready,
+        .on_sync_success = basic_demo_time_sync_success,
+    }),
+    TAG,
+    "Failed to start time sync service");
+    ESP_RETURN_ON_ERROR(cap_scheduler_start(), TAG, "Failed to start scheduler");
     ESP_RETURN_ON_ERROR(basic_demo_cli_start(), TAG, "Failed to start CLI");
 
     return ESP_OK;
