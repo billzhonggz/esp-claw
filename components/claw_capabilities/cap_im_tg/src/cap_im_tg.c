@@ -1363,7 +1363,7 @@ static const claw_cap_descriptor_t s_tg_descriptors[] = {
         .kind = CLAW_CAP_KIND_EVENT_SOURCE,
         .cap_flags = CLAW_CAP_FLAG_EMITS_EVENTS |
         CLAW_CAP_FLAG_SUPPORTS_LIFECYCLE,
-        .input_schema_json = "{\"type\":\"object\"}",
+        .input_schema_json = "{\"type\":\"object\",\"properties\":{}}",
         .init = cap_im_tg_gateway_init,
         .start = cap_im_tg_gateway_start,
         .stop = cap_im_tg_gateway_stop,

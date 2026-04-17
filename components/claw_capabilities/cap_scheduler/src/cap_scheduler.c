@@ -62,7 +62,7 @@ static const claw_cap_descriptor_t s_scheduler_descriptors[] = {
         .description = "List all scheduler entries and runtime state.",
         .kind = CLAW_CAP_KIND_HYBRID,
         .cap_flags = CLAW_CAP_FLAG_CALLABLE_BY_LLM,
-        .input_schema_json = "{\"type\":\"object\"}",
+        .input_schema_json = "{\"type\":\"object\",\"properties\":{}}",
         .execute = cap_scheduler_execute_list,
     },
     {
@@ -141,7 +141,7 @@ static const claw_cap_descriptor_t s_scheduler_descriptors[] = {
         .description = "Reload scheduler definitions from disk.",
         .kind = CLAW_CAP_KIND_HYBRID,
         .cap_flags = CLAW_CAP_FLAG_CALLABLE_BY_LLM,
-        .input_schema_json = "{\"type\":\"object\"}",
+        .input_schema_json = "{\"type\":\"object\",\"properties\":{}}",
         .execute = cap_scheduler_execute_reload,
     },
 };

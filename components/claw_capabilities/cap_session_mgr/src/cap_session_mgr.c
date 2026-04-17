@@ -373,7 +373,7 @@ static const claw_cap_descriptor_t s_session_mgr_caps[] = {
         .description = "Advance the current chat to a fresh persistent session.",
         .kind = CLAW_CAP_KIND_CALLABLE,
         .cap_flags = CLAW_CAP_FLAG_RESTRICTED,
-        .input_schema_json = "{\"type\":\"object\"}",
+        .input_schema_json = "{\"type\":\"object\",\"properties\":{}}",
         .execute = cap_session_mgr_roll_execute,
     },
 };

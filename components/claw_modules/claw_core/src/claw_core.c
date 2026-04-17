@@ -934,6 +934,9 @@ static void claw_core_task(void *arg)
                                               &llm_response,
                                               &response.view.error_message);
             if (err != ESP_OK) {
+                ESP_LOGE(TAG, "request=%"PRIu32" LLM chat failed: %s",
+                         request.view.request_id,
+                         response.view.error_message ? response.view.error_message : esp_err_to_name(err));
                 goto finish_request;
             }
 

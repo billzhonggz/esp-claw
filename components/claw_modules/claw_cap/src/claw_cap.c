@@ -241,9 +241,16 @@ char *claw_cap_build_llm_tools_json(const claw_cap_call_context_t *ctx,
         cJSON_AddStringToObject(item, "description",
                                 slot->descriptor.description ? slot->descriptor.description : "");
         schema = cJSON_Parse(slot->descriptor.input_schema_json ?
-                             slot->descriptor.input_schema_json : "{\"type\":\"object\"}");
+                             slot->descriptor.input_schema_json : "{\"type\":\"object\",\"properties\":{}}");
         if (!schema) {
             schema = cJSON_CreateObject();
+        } else {
+            cJSON *type_item = cJSON_GetObjectItem(schema, "type");
+            if (cJSON_IsString(type_item) && strcmp(type_item->valuestring, "object") == 0 &&
+                    !cJSON_GetObjectItem(schema, "properties")) {
+                ESP_LOGW(TAG, "cap '%s' schema type=object missing properties, may cause LLM API 400",
+                         slot->descriptor.name);
+            }
         }
         cJSON_AddItemToObject(item, "input_schema", schema);
         cJSON_AddItemToArray(raw_tools, item);

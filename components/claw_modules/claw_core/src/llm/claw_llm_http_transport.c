@@ -12,6 +12,9 @@
 
 #include "esp_crt_bundle.h"
 #include "esp_http_client.h"
+#include "esp_log.h"
+
+static const char *TAG = "llm_http";
 
 #define CLAW_LLM_HTTP_RB_INITIAL_CAP 4096
 
@@ -238,16 +241,20 @@ esp_err_t claw_llm_http_post_json(const claw_llm_http_json_request_t *request,
     }
     esp_http_client_set_post_field(client, request->body, (int)strlen(request->body));
 
+    ESP_LOGI(TAG, "POST %s", request->url);
     err = esp_http_client_perform(client);
     if (err != ESP_OK) {
         *out_error_message = dup_printf("HTTP request failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "HTTP perform failed: %s", esp_err_to_name(err));
         goto cleanup;
     }
 
     status_code = esp_http_client_get_status_code(client);
+    ESP_LOGI(TAG, "HTTP status=%d", status_code);
     if (status_code != 200) {
         err = ESP_FAIL;
         *out_error_message = parse_error_message_body(buffer.data, status_code);
+        ESP_LOGE(TAG, "LLM error: %s", *out_error_message ? *out_error_message : "(null)");
         goto cleanup;
     }
 

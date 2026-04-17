@@ -552,7 +552,7 @@ static const claw_cap_descriptor_t s_lua_descriptors[] = {
         .kind = CLAW_CAP_KIND_CALLABLE,
         .cap_flags = CLAW_CAP_FLAG_CALLABLE_BY_LLM,
         .input_schema_json =
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"},\"args\":{\"type\":[\"object\",\"array\"]},\"timeout_ms\":{\"type\":\"integer\"}},\"required\":[\"path\"]}",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"},\"args\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{}},{\"type\":\"array\",\"items\":{}}]},\"timeout_ms\":{\"type\":\"integer\"}},\"required\":[\"path\"]}",
         .execute = cap_lua_run_script_execute,
     },
     {
@@ -563,7 +563,7 @@ static const claw_cap_descriptor_t s_lua_descriptors[] = {
         .kind = CLAW_CAP_KIND_CALLABLE,
         .cap_flags = CLAW_CAP_FLAG_CALLABLE_BY_LLM,
         .input_schema_json =
-        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"},\"args\":{\"type\":[\"object\",\"array\"]},\"timeout_ms\":{\"type\":\"integer\"}},\"required\":[\"path\"]}",
+        "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"},\"args\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{}},{\"type\":\"array\",\"items\":{}}]},\"timeout_ms\":{\"type\":\"integer\"}},\"required\":[\"path\"]}",
         .execute = cap_lua_run_script_async_execute,
     },
     {
