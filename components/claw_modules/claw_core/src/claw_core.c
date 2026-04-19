@@ -322,10 +322,13 @@ static int64_t claw_core_now_ms(void)
     return ((int64_t)tv.tv_sec * 1000LL) + (tv.tv_usec / 1000LL);
 }
 
-static void claw_core_apply_timezone(void)
+static void claw_core_check_timezone(void)
 {
-    setenv("TZ", CONFIG_BASIC_DEMO_TIME_TIMEZONE, 1);
-    tzset();
+    const char *timezone = getenv("TZ");
+
+    if (!timezone || timezone[0] == '\0') {
+        ESP_LOGW(TAG, "Timezone is not configured; time-related responses may use an unexpected timezone");
+    }
 }
 
 static esp_err_t build_response_payload_json(const claw_core_request_t *request,
@@ -1227,7 +1230,7 @@ esp_err_t claw_core_init(const claw_core_config_t *config)
     }
 
     memset(&s_core, 0, sizeof(s_core));
-    claw_core_apply_timezone();
+    claw_core_check_timezone();
 
     s_core.system_prompt = dup_string(config->system_prompt);
     if (!s_core.system_prompt) {
