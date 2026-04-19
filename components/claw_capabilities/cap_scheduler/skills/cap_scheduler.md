@@ -4,27 +4,26 @@ Use this skill when the user needs to inspect or control timer-based schedule ru
 
 ## When to use
 - The user asks to list current schedules.
-- The user asks to add a new schedule.
-- The user asks to update or remove a schedule.
+- The user asks to add, update, or remove a schedule.
 - The user asks to pause, resume, enable, disable, trigger, or reload a schedule.
-- The user asks for a timer-based reminder, automation, periodic check, or timed agent wake-up.
+- The user asks for a timer-based reminder, periodic check, timed automation, or scheduled agent wake-up.
 
 ## Available capabilities
 - `scheduler_list`: list all scheduler entries and runtime state.
-- `scheduler_get`: get one scheduler entry by id.
-- `scheduler_add`: add a new scheduler entry from `schedule_json` string.
-- `scheduler_update`: update an existing scheduler entry from `schedule_json` string.
-- `scheduler_remove`: remove one scheduler entry by id.
-- `scheduler_enable`: enable one scheduler entry by id.
-- `scheduler_disable`: disable one scheduler entry by id.
-- `scheduler_pause`: pause one scheduler entry by id.
-- `scheduler_resume`: resume one scheduler entry by id.
+- `scheduler_get`: get one scheduler entry by `id`.
+- `scheduler_add`: add one scheduler entry from `schedule_json` string.
+- `scheduler_update`: update one scheduler entry from `schedule_json` string.
+- `scheduler_remove`: remove one scheduler entry by `id`.
+- `scheduler_enable`: enable one scheduler entry by `id`.
+- `scheduler_disable`: disable one scheduler entry by `id`.
+- `scheduler_pause`: pause one scheduler entry by `id`.
+- `scheduler_resume`: resume one scheduler entry by `id`.
 - `scheduler_trigger_now`: trigger one scheduler entry immediately.
 - `scheduler_reload`: reload scheduler definitions from disk.
 
-## `scheduler_add` / `scheduler_update` input format
-- `schedule_json` is a JSON string, not an object.
-- Use a stable, unique `id`. `scheduler_add` fails if the id already exists.
+## Calling rules
+- Use the direct scheduler capabilities. Do not route scheduler operations through `cap_cli` unless the user explicitly asks for console commands.
+- `scheduler_add` and `scheduler_update` input must be:
 
 ```json
 {
@@ -32,88 +31,104 @@ Use this skill when the user needs to inspect or control timer-based schedule ru
 }
 ```
 
+- `schedule_json` is a JSON string, not an object.
+- Use a stable, unique `id`. `scheduler_add` fails if the id already exists. `scheduler_update` requires the id to already exist.
+- `scheduler_get`, `scheduler_remove`, `scheduler_enable`, `scheduler_disable`, `scheduler_pause`, `scheduler_resume`, and `scheduler_trigger_now` take:
+
+```json
+{
+  "id": "schedule_id"
+}
+```
+
 ## `schedule_json` object fields
-- `id`: schedule unique id.
-- `enabled`: whether schedule is active. Defaults to `true`.
-- `kind`: `interval`, or `cron`.
-- `interval_ms`: interval period for `interval`.
-- `cron_expr`: 5-field cron expression for `cron` (`minute hour mday month wday`), without seconds.
+- Required fields:
+  - `id`: schedule unique id.
+  - `kind`: one of `once`, `interval`, or `cron`.
+- `enabled`: whether the schedule is active. Defaults to `true`.
+- `start_at_ms`: absolute Unix epoch timestamp in milliseconds. Required for `once`. Optional for `interval`.
+- `end_at_ms`: optional stop time in Unix epoch milliseconds for `once` or `interval`.
+- `interval_ms`: interval period in milliseconds. Required for `interval`.
+- `cron_expr`: 5-field cron expression for `cron`, in the form `minute hour mday month wday`.
 - `event_type`: event type published to the router. Defaults to `schedule`.
 - `event_key`: logical key for router matching and tracing. Defaults to `id`.
-- `source_channel`: event source channel (for example `time`, `qq`, `telegram`).
-- `chat_id`: target chat id when the router action needs one.
+- `source_channel`: event source channel. Defaults to `time`.
+- `chat_id`: optional target chat id when downstream router actions need one.
 - `content_type`: event content type. Defaults to `trigger`.
-- `session_policy`: session policy (`trigger`, `chat`, `global`, `ephemeral`, `nosave`). Defaults to `trigger`.
-- `text`: event text payload. For agent wake-up rules, write this as the prompt the agent should reason about.
-- `payload_json`: user structured payload. Defaults to `{}`. At trigger time the scheduler wraps it under `user_payload` and also adds schedule metadata.
+- `session_policy`: one of `trigger`, `chat`, `global`, `ephemeral`, `nosave`. Defaults to `trigger`.
+- `text`: optional event text payload. For agent wake-up rules, use this as the instruction text.
+- `payload_json`: optional structured payload. Defaults to `{}`. It may be written either as a JSON string or as a JSON object in the item itself.
 - `max_runs`: max trigger count. `0` means unlimited.
 
 ## Time semantics
-- Choose `interval` for relative periodic execution, such as "every 10 seconds", "every 5 minutes", "once per hour after startup", or general periodic polling, or when there are offline running needs.
-- Choose `cron` for calendar-based repeated execution, such as "every day at 08:00", "every Monday", "on the 1st day of each month", or "every 3 minutes aligned to wall-clock time". `cron` depends on valid wall-clock time and uses the device's current local time. Supported field forms are `*`, `*/N`, or one explicit number in range; for example, `*/3 * * * *`.
+- Use `once` for one-shot execution at a specific absolute time.
+- Use `interval` for relative periodic execution such as "every 10 seconds" or "every 5 minutes".
+- An `interval` schedule without `start_at_ms` and `end_at_ms` can run before wall-clock time is synchronized.
+- Use `cron` for wall-clock aligned repeated execution such as "every day at 08:00" or "every Monday".
+- `cron` depends on valid local time and uses the device's current local timezone.
+- Supported cron field forms are only `*`, `*/N`, or one explicit number in range. More complex cron syntax such as ranges, lists, or names is not supported.
+- Only 5 cron fields are supported. Do not pass a 6-field expression with seconds.
 
+## Runtime behavior
+- Scheduler entries only publish events. They do not define post-trigger behavior by themselves.
+- At trigger time the scheduler builds an event payload containing:
+  - `schedule_id`
+  - `planned_time_ms`
+  - `fire_time_ms`
+  - `kind`
+  - `run_count`
+  - `user_payload`
+- If a schedule is late by more than one scheduler tick, the runtime counts it as missed and advances to the next fire time instead of replaying all missed runs.
+- `scheduler_trigger_now` publishes the event immediately and then refreshes future runtime state. It does not delete the schedule definition.
 
-## MUST work with Event Router
-- Scheduler entries only publish events; they do not define post-trigger behavior.
-- For normal scheduled work, set `event_type` to `schedule` and add a matching router rule using `match.event_type` + `match.event_key`.
-- Router rule operations and formats are documented in `cap_router_mgr.md` (`add_router_rule` / `update_router_rule`).
-- Always choose one router action strategy before adding the schedule between deterministic actions and agent wake-up.
-
-## Router action strategy
-
-### Strategy 1: direct deterministic actions
-- Default strategy: use this for fixed reminders, fixed outbound messages, voice reminders, periodic local automation, scripts, or fixed capability calls and other deterministic work.
-- Keep the scheduler event as `event_type: "schedule"` and `content_type: "trigger"`.
-- Add a router rule whose match is exactly the schedule event: `{"event_type":"schedule","event_key":"<event_key>"}`.
-- Use deterministic router actions such as `send_message`, `call_cap`, `run_script`.
-- Put the final **user-facing message** in the router action, not in the scheduler `text`, unless the action intentionally renders `{{event.text}}`.
-
-### Strategy 2: send message to wake up agent
-- Expensive strategy: use it when the scheduled task requires the agent to reason from current context, decide what to do, choose skills/tools, summarize/check a changing situation, or handle complicated tasks.
-- Keep the scheduler event as `event_type: "schedule"` and add a matching router rule with action type `run_agent`.
-- Put the agent instruction in `run_agent.input.text` or pass through `{{event.text}}`.
-- Set `target_channel` and `target_chat_id` in the `run_agent` input when the eventual agent response should be delivered to a chat.
-- Prefer `session_policy: "trigger"` for an independent recurring task thread. Use `chat` only when the scheduled run should share the chat session history.
+## Integration note
+- Scheduler rules only define when an event is published.
+- Any post-trigger behavior such as sending a message, running the agent, or calling another capability must be configured elsewhere.
+- Router rule are introduced in `cap_router_mgr` skill, not in this skill.
 
 ## Recommended workflow
-1. Use `scheduler_list` / `scheduler_get` and `list_router_rules` / `get_router_rule` to inspect current state and avoid id conflicts.
-2. Choose the time kind: `interval`, or `cron`.
-3. Choose the router action strategy: direct deterministic action or agent wake-up.
-4. Add one scheduler entry with a stable `event_key`.
-5. Add or update the matching router rule through `cap_router_mgr`.
+1. Use `scheduler_list` or `scheduler_get` to inspect current state and avoid id conflicts.
+2. Choose the time kind: `once`, `interval`, or `cron`.
+3. Add or update one scheduler entry with a stable `event_key`.
+4. Active `cap_router_mgr` skill and write router rules.
 
 ## Common failure causes
-- Adding only the schedule and forgetting the matching router rule.
-- Using `event_type: "message"` for a simple reminder, causing unnecessary LLM usage.
-- Mismatched `event_key` between the schedule and `match.event_key`.
-- Using a 6-field cron expression with seconds; only 5 fields are supported.
-- Omitting `chat_id`, `target_channel`, or `target_chat_id` when the action must produce a visible chat message.
+- Passing `schedule_json` as an object instead of a string.
+- Omitting required fields for the chosen kind, such as missing `start_at_ms`, `interval_ms`, or `cron_expr`.
+- Using a 6-field cron expression or unsupported cron syntax.
+- Assuming the scheduler itself will send messages or run follow-up actions.
 
 ## Examples
 
-### `interval + send_message`
+### `interval`
 
-Scheduler entry: trigger every 30 seconds, 3 times in total.
-
-```json
-{
-  "schedule_json": "{\"id\":\"drink_reminder_30s\",\"enabled\":true,\"kind\":\"interval\"，\"interval_ms\":30000,\"cron_expr\":\"\",\"event_type\":\"schedule\",\"event_key\":\"drink_reminder\",\"source_channel\":\"time\",\"chat_id\":\"a_certain_QQ_chat_ID\",\"content_type\":\"trigger\",\"session_policy\":\"trigger\",\"text\":\"drink reminder tick\",\"payload_json\":\"{\\\"message\\\":\\\"time to drink water\\\"}\",\"max_runs\":3}"
-}
-```
-
-Matching router rule: `send_message`.
-
-### `cron + run_agent`
-
-Scheduler entry: trigger every day at 08:00 and publish a schedule event to wake up the agent.
+Trigger every 30 seconds, 3 times in total.
 
 ```json
 {
-  "schedule_json": "{\"id\":\"daily_agent_check\",\"enabled\":true,\"kind\":\"cron\",\"interval_ms\":0,\"cron_expr\":\"0 8 * * *\",\"event_type\":\"schedule\",\"event_key\":\"daily_agent_check\",\"source_channel\":\"time\",\"chat_id\":\"a_certain_QQ_chat_ID\",\"content_type\":\"trigger\",\"session_policy\":\"trigger\",\"text\":\"Please check the weather today and tell me what I should prepare for going out.\",\"payload_json\":\"{}\",\"max_runs\":0}"
+  "schedule_json": "{\"id\":\"drink_reminder_30s\",\"enabled\":true,\"kind\":\"interval\",\"interval_ms\":30000,\"event_type\":\"schedule\",\"event_key\":\"drink_reminder\",\"source_channel\":\"time\",\"chat_id\":\"group:example\",\"content_type\":\"trigger\",\"session_policy\":\"trigger\",\"text\":\"drink reminder tick\",\"payload_json\":{\"message\":\"time to drink water\"},\"max_runs\":3}"
 }
 ```
 
-Matching router action: `run_agent`.
+### `cron`
+
+Trigger every day at 08:00.
+
+```json
+{
+  "schedule_json": "{\"id\":\"daily_agent_check\",\"enabled\":true,\"kind\":\"cron\",\"cron_expr\":\"0 8 * * *\",\"event_type\":\"schedule\",\"event_key\":\"daily_agent_check\",\"source_channel\":\"time\",\"chat_id\":\"group:example\",\"content_type\":\"trigger\",\"session_policy\":\"trigger\",\"text\":\"Please check the weather today and tell me what I should prepare for going out.\",\"payload_json\":{},\"max_runs\":0}"
+}
+```
+
+### `once`
+
+Trigger once at a specific timestamp.
+
+```json
+{
+  "schedule_json": "{\"id\":\"bootstrap_once\",\"enabled\":true,\"kind\":\"once\",\"start_at_ms\":1893456000000,\"event_type\":\"schedule\",\"event_key\":\"bootstrap_once\",\"source_channel\":\"time\",\"content_type\":\"trigger\",\"session_policy\":\"trigger\",\"text\":\"bootstrap once\",\"payload_json\":{\"task\":\"bootstrap\"},\"max_runs\":1}"
+}
+```
 
 ### Pause a schedule
 
