@@ -6,5 +6,6 @@ idf_component_register(
     REQUIRES
         cap_lua
         esp_codec_dev
+        esp-dsp
         driver
 )
