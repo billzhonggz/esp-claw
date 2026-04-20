@@ -60,3 +60,11 @@
 :root[data-theme='dark'] starlight-toc nav a:not([aria-current]) {
   color: var(--sl-color-gray-2);
 }
+
+:root[data-theme='dark'] .sl-link-card {
+  border-color: var(--sl-color-gray-2);
+}
+
+:root[data-theme='dark'] .sl-link-card:hover {
+  border-color: var(--sl-color-gray-1);
+}

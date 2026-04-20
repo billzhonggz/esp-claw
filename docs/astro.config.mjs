@@ -15,7 +15,7 @@ export default defineConfig({
     astroD2(),
     starlight({
       title: "ESP-Claw Docs",
-      favicon: "/favicon.ico",
+      favicon: "/esp-claw/favicon.ico",
       social: [
         {
           icon: "github",

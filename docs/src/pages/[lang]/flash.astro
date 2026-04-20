@@ -2,6 +2,7 @@
 import SiteShell from "@/layouts/SiteShell.astro";
 import firmwareDb from "@/flash-tool/firmware.json";
 import type { Lang } from "@/site/locales";
+import { localeHref } from "@/site/locales";
 import { getChromeStrings } from "@/site/chrome-i18n";
 import { getStrings } from "@/flash-tool/i18n";
 
@@ -16,6 +17,25 @@ export function getStaticPaths() {
 const { lang } = Astro.params as { lang: Lang };
 const s = getStrings(lang);
 const chrome = getChromeStrings(lang);
+const tutorialHref = localeHref(lang, "tutorial/get-started");
+const boardsHref = "https://github.com/espressif/esp-claw/tree/master/application/basic_demo/boards";
+
+const quickLinks = [
+  {
+    icon: "🔧",
+    title: s.quickLinkNoHardwareTitle,
+    desc: s.quickLinkNoHardwareDesc,
+    href: tutorialHref,
+    external: false,
+  },
+  {
+    icon: "📋",
+    title: s.quickLinkBoardsTitle,
+    desc: s.quickLinkBoardsDesc,
+    href: boardsHref,
+    external: true,
+  },
+];
 /** Safe JSON for <script type="application/json"> (breaks if raw `<` appears in strings) */
 const flashBootJson = JSON.stringify({
   lang,
@@ -937,6 +957,64 @@ const flashBootJson = JSON.stringify({
     .firmware-desc.visible {
       display: none;
     }
+
+    /* Quick-link cards above the flash tool */
+    .quick-links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 540px) {
+      .quick-links {
+        grid-template-columns: 1fr;
+      }
+    }
+    .quick-link-card {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.85rem 1.1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      text-decoration: none;
+      color: inherit;
+      transition:
+        border-color 0.15s,
+        background 0.15s;
+    }
+    .quick-link-card:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+      background: var(--bg-card-hover);
+    }
+    .quick-link-icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .quick-link-text {
+      min-width: 0;
+    }
+    .quick-link-title {
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      margin-bottom: 0.15rem;
+    }
+    .quick-link-desc {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .quick-link-arrow {
+      margin-left: auto;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
   </style>
 
   <div class="page-header">
@@ -945,6 +1023,25 @@ const flashBootJson = JSON.stringify({
   </div>
 
   <main>
+    <!-- Quick-link cards -->
+    <div class="quick-links">
+      {quickLinks.map((card) => (
+        <a
+          href={card.href}
+          class="quick-link-card"
+          target={card.external ? "_blank" : undefined}
+          rel={card.external ? "noopener noreferrer" : undefined}
+        >
+          <span class="quick-link-icon">{card.icon}</span>
+          <span class="quick-link-text">
+            <div class="quick-link-title">{card.title}</div>
+            <div class="quick-link-desc">{card.desc}</div>
+          </span>
+          <span class="quick-link-arrow">{card.external ? "↗" : "→"}</span>
+        </a>
+      ))}
+    </div>
+
     <div class="unsupported-banner" id="unsupported-banner">
       {s.webSerialUnsupported}
     </div>

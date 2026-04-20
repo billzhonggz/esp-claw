@@ -90,12 +90,17 @@ export interface Strings {
   consoleResetBtn: string;
   progressLabel: string;
 
+  // Quick-link cards above the flash tool
+  quickLinkNoHardwareTitle: string;
+  quickLinkNoHardwareDesc: string;
+  quickLinkBoardsTitle: string;
+  quickLinkBoardsDesc: string;
 }
 
 const en: Strings = {
   pageTitle: "Flash Online",
   pageSubtitle:
-    "Connect your ESP32 and flash ESP-Claw firmware directly from the browser.",
+    "Connect your supported ESP series development board and flash ESP-Claw firmware directly from the browser.",
 
   tabLockedWhileFlashing: "Available when flashing finishes",
   connectBtn: "Connect",
@@ -179,11 +184,16 @@ const en: Strings = {
   consoleClearBtn: "Clear",
   consoleResetBtn: "Reset",
   progressLabel: "Progress",
+
+  quickLinkNoHardwareTitle: "No hardware yet?",
+  quickLinkNoHardwareDesc: "Assemble your ESP-Claw board",
+  quickLinkBoardsTitle: "Have other ESP boards?",
+  quickLinkBoardsDesc: "View supported board list",
 };
 
 const zhCn: Strings = {
   pageTitle: "在线烧录",
-  pageSubtitle: "连接 ESP32，直接在浏览器中烧录 ESP-Claw 固件。",
+  pageSubtitle: "连接支持的 ESP 开发版，直接在浏览器中烧录 ESP-Claw 固件。",
 
   tabLockedWhileFlashing: "烧录结束后可切换到控制台",
   connectBtn: "连接",
@@ -263,6 +273,11 @@ const zhCn: Strings = {
   consoleClearBtn: "清空",
   consoleResetBtn: "重启",
   progressLabel: "进度",
+
+  quickLinkNoHardwareTitle: "还没有硬件？",
+  quickLinkNoHardwareDesc: "组装 ESP-Claw 开发版",
+  quickLinkBoardsTitle: "有其他 ESP 开发版？",
+  quickLinkBoardsDesc: "查看支持的开发板列表",
 };
 
 const strings: Record<Lang, Strings> = {

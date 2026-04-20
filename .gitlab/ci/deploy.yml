@@ -23,7 +23,8 @@ collect_firmware_manifest:
       artifacts: true
       optional: true
   script:
-    - apk add curl
+    - apt-get update
+    - apt-get install -y curl
     - python .gitlab/ci/generate_firmware_json.py
     - python .gitlab/ci/deploy_firmware.py
   artifacts:
