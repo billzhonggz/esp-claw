@@ -154,31 +154,7 @@ esp_err_t cap_lua_ensure_base_dir(void)
     return ESP_OK;
 }
 
-/*
- * When claw_core invokes a Lua tool from an IM session, merge channel / chat_id / session_id
- * into the script `args` global when the tool JSON omits them (IM scripts need chat_id for
- * event_publisher, etc.). Explicit keys in the tool payload always win.
- */
-static void cap_lua_merge_agent_context_into_args(cJSON *args_obj, const claw_cap_call_context_t *ctx)
-{
-    if (!args_obj || !cJSON_IsObject(args_obj) || !ctx) {
-        return;
-    }
-    if (ctx->caller != CLAW_CAP_CALLER_AGENT) {
-        return;
-    }
-    if (ctx->channel && ctx->channel[0] && !cJSON_GetObjectItem(args_obj, "channel")) {
-        cJSON_AddStringToObject(args_obj, "channel", ctx->channel);
-    }
-    if (ctx->chat_id && ctx->chat_id[0] && !cJSON_GetObjectItem(args_obj, "chat_id")) {
-        cJSON_AddStringToObject(args_obj, "chat_id", ctx->chat_id);
-    }
-    if (ctx->session_id && ctx->session_id[0] && !cJSON_GetObjectItem(args_obj, "session_id")) {
-        cJSON_AddStringToObject(args_obj, "session_id", ctx->session_id);
-    }
-}
-
-static esp_err_t cap_lua_build_args_json(cJSON *root, const claw_cap_call_context_t *ctx, char **args_json_out)
+static esp_err_t cap_lua_build_args_json(cJSON *root, char **args_json_out)
 {
     cJSON *args = NULL;
     cJSON *payload = NULL;
@@ -189,33 +165,16 @@ static esp_err_t cap_lua_build_args_json(cJSON *root, const claw_cap_call_contex
     *args_json_out = NULL;
 
     args = cJSON_GetObjectItem(root, "args");
-    if (cJSON_IsObject(args)) {
+    if (cJSON_IsObject(args) || cJSON_IsArray(args)) {
         payload = cJSON_Duplicate(args, 1);
         if (!payload) {
             return ESP_ERR_NO_MEM;
         }
-        cap_lua_merge_agent_context_into_args(payload, ctx);
-    } else if (cJSON_IsArray(args)) {
-        payload = cJSON_Duplicate(args, 1);
-        if (!payload) {
+        *args_json_out = cJSON_PrintUnformatted(payload);
+        cJSON_Delete(payload);
+        if (!*args_json_out) {
             return ESP_ERR_NO_MEM;
         }
-    } else {
-        payload = cJSON_CreateObject();
-        if (!payload) {
-            return ESP_ERR_NO_MEM;
-        }
-        cap_lua_merge_agent_context_into_args(payload, ctx);
-        if (cJSON_GetArraySize(payload) == 0) {
-            cJSON_Delete(payload);
-            return ESP_OK;
-        }
-    }
-
-    *args_json_out = cJSON_PrintUnformatted(payload);
-    cJSON_Delete(payload);
-    if (!*args_json_out) {
-        return ESP_ERR_NO_MEM;
     }
     return ESP_OK;
 }
@@ -500,6 +459,8 @@ static esp_err_t cap_lua_run_script_execute(const char *input_json,
     uint32_t timeout_ms = 0;
     esp_err_t err;
 
+    (void)ctx;
+
     root = cJSON_Parse(input_json);
     if (!root) {
         ESP_LOGE(TAG, "run_script: invalid json");
@@ -525,7 +486,7 @@ static esp_err_t cap_lua_run_script_execute(const char *input_json,
         timeout_ms = (uint32_t)timeout_item->valueint;
     }
 
-    err = cap_lua_build_args_json(root, ctx, &args_json);
+    err = cap_lua_build_args_json(root, &args_json);
     cJSON_Delete(root);
     if (err != ESP_OK) {
         free(args_json);
@@ -577,6 +538,8 @@ static esp_err_t cap_lua_run_script_async_execute(const char *input_json,
     char err_buf[256] = {0};
     bool replace = false;
     esp_err_t err;
+
+    (void)ctx;
 
     root = cJSON_Parse(input_json);
     if (!root) {
@@ -635,7 +598,7 @@ static esp_err_t cap_lua_run_script_async_execute(const char *input_json,
         strlcpy(job.exclusive, exclusive, sizeof(job.exclusive));
     }
 
-    err = cap_lua_build_args_json(root, ctx, &args_json);
+    err = cap_lua_build_args_json(root, &args_json);
     cJSON_Delete(root);
     if (err != ESP_OK) {
         free(args_json);

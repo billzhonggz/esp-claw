@@ -15,3 +15,8 @@ basic_demo_enable_component_skills_sync(
     DEMO_SKILLS_DIR "${CMAKE_SOURCE_DIR}/fatfs_image/skills"
     MANIFEST_PATH "${CMAKE_BINARY_DIR}/component_skills_manifest.json"
 )
+basic_demo_enable_component_builtin_lua_sync(
+    TARGET fatfs_storage_bin
+    OUTPUT_DIR "${CMAKE_SOURCE_DIR}/fatfs_image/scripts/builtin"
+    MANIFEST_PATH "${CMAKE_BINARY_DIR}/component_builtin_lua_manifest.json"
+)

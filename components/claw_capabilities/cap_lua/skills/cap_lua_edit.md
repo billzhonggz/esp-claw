@@ -4,7 +4,8 @@ Use this skill when the user wants to create, modify, or organize Lua scripts. T
 
 ## Core Constraints
 
-- Use `lua_write_script` for writes. Do not use `cap_cli`.
+- Use `lua_write_script` for writes. 
+- Prefer reusing or adapting an existing script. Create a new script only when existing scripts cannot satisfy the requirement.
 - `path` must be a relative `.lua` path such as `builtin/foo.lua`, `temp/foo.lua`, or `user/bar.lua`.
 - Do not use absolute paths, do not include `..`, and do not write non-`.lua` files.
 - `lua_write_script` creates parent directories automatically.
@@ -16,9 +17,10 @@ Use this skill when the user wants to create, modify, or organize Lua scripts. T
 ## Recommended Flow
 
 1. Use `cap_lua_list` and call `lua_list_scripts` first to see whether a close script already exists, especially under `builtin/`.
-2. If you want to reuse an existing script, read its source with `read_file`. When the source comes from `builtin/`, usually rewrite it into `temp/` or `user/` instead of editing the built-in path.
-3. Write new scripts under `temp/*.lua` first, then move them to `user/*.lua` after confirmation.
-4. Reuse the same path during iteration instead of creating `foo2.lua`, `foo3.lua`, and so on.
+2. Reuse or adapt the closest existing script whenever possible. Create a new script only when existing scripts do not meet the requirement.
+3. If you want to reuse an existing script, read its source with `read_file`. When the source comes from `builtin/`, usually rewrite it into `temp/` or `user/` instead of editing the built-in path.
+4. Write new scripts under `temp/*.lua` first, then move them to `user/*.lua` after confirmation.
+5. Reuse the same path during iteration instead of creating `foo2.lua`, `foo3.lua`, and so on.
 
 ## `lua_write_script`
 

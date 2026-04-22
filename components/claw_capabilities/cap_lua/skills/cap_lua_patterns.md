@@ -5,6 +5,7 @@ Use this skill together with `cap_lua_edit` whenever you are about to write or r
 All templates follow the rules in `cap_lua_edit`:
 - `require` only documented modules.
 - Keep emitted text simple and predictable.
+- Prefer adapting an existing script before creating a brand-new one. Only emit a new script when reuse cannot satisfy the requirement.
 
 The patterns reference representative modules only. Not every firmware build ships every module. Before emitting a script, check the active `lua_module_*` skill list and use only modules that are present. When a required module is not available, change the design rather than inventing an API.
 

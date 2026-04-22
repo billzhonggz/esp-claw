@@ -4,7 +4,7 @@ Use this skill when the user wants to find existing Lua scripts, filter scripts 
 
 ## Core Constraints
 
-- Use `lua_list_scripts` for script discovery. Do not use `cap_cli`.
+- Prefer finding and reusing an existing script before proposing a new one. Create a new script only when no existing script can satisfy the requirement.
 - `lua_list_scripts` returns paths relative to the Lua script root.
 - Built-in scripts live under `builtin/`. User-authored scripts should live under `temp/` or `user/`.
 - Relative paths must not be absolute and must not contain `..`.
@@ -37,6 +37,7 @@ Return behavior:
 ## Recommended Flow
 
 1. Call `lua_list_scripts` first, with `prefix` or `keyword` when needed.
-2. After finding the target, use `read_file("scripts/<relative_path>")` if you need the source.
-3. Switch to `cap_lua_edit` if the next step is editing.
-4. Switch to `cap_lua_run` if the next step is execution or async job management.
+2. If an existing script is close to the user's requirement, reuse that path or source instead of creating a new file.
+3. After finding the target, use `read_file("scripts/<relative_path>")` if you need the source.
+4. Switch to `cap_lua_edit` if the next step is editing.
+5. Switch to `cap_lua_run` if the next step is execution or async job management.
