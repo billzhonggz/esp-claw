@@ -16,6 +16,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 |--------|-----------|---------|
 | `display` | `lua_module_display` | LCD drawing (text, primitives, JPEG/PNG) |
 | `gpio` | `lua_module_gpio` | GPIO reads/writes and direction |
+| `i2c` | `lua_module_i2c` | I2C bus scan and per-device read/write |
 | `button` | `lua_module_button` | Button events + callbacks |
 | `led_strip` | `lua_module_led_strip` | Addressable strips such as WS2812 |
 | `audio` | `lua_module_audio` | PCM/WAV playback/recording and spectrum analysis |
@@ -30,7 +31,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 | `board_manager` | `lua_module_board_manager` | Board init + peripheral handles |
 
 <Aside type="note" title="Board-gated modules">
-    In `basic_demo`, `audio`, `camera`, and `lcd_touch` are compiled in only when the board Kconfig says the hardware exists (`CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT`, `CONFIG_ESP_BOARD_DEV_CAMERA_SUPPORT`, `CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT`); `basic_demo_lua_modules_register()` registers them only in that case.  
+    In `basic_demo`, `audio`, `camera`, and `lcd_touch` are compiled in only when the board Kconfig says the hardware exists (`CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT`, `CONFIG_ESP_BOARD_DEV_CAMERA_SUPPORT`, `CONFIG_ESP_BOARD_DEV_LCD_TOUCH_I2C_SUPPORT`); `basic_demo_lua_modules_register()` registers them only in that case.
     On boards without the matching hardware, `require("audio")` and similar calls fail with **module not found**.
 </Aside>
 

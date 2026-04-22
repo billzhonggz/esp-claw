@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Unreleased
+
+### Feature:
+
+* Added i2c Lua module: Introduced support for hardware I2C bus initialization, device scanning, and standard register read/write operations.
+
 ## 2026-04-21
 
 ### Refactor:
