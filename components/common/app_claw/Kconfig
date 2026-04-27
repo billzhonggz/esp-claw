@@ -153,12 +153,26 @@ menu "App Claw Config"
 
     menu "App Claw Lua Modules"
 
+        config APP_CLAW_LUA_MODULE_ADC
+            bool "Enable ADC Lua module"
+            default y
+            help
+                Enable the ADC Lua module and keep app_claw's direct dependency
+                on lua_module_adc when Lua capability is enabled.
+
         config APP_CLAW_LUA_MODULE_BOARD_MANAGER
             bool "Enable board manager Lua module"
             default y
             help
                 Enable the board manager Lua module and keep app_claw's direct
                 dependency on lua_module_board_manager when Lua capability is enabled.
+
+        config APP_CLAW_LUA_MODULE_CAPABILITY
+            bool "Enable capability Lua module"
+            default y
+            help
+                Enable the capability Lua module and keep app_claw's direct
+                dependency on lua_module_call_capability when Lua capability is enabled.
 
         config APP_CLAW_LUA_MODULE_BUTTON
             bool "Enable button Lua module"
@@ -202,6 +216,13 @@ menu "App Claw Config"
                 Enable the GPIO Lua module and keep app_claw's direct dependency
                 on lua_module_gpio when Lua capability is enabled.
 
+        config APP_CLAW_LUA_MODULE_I2C
+            bool "Enable I2C Lua module"
+            default y
+            help
+                Enable the I2C Lua module and keep app_claw's direct dependency
+                on lua_module_i2c when Lua capability is enabled.
+
         config APP_CLAW_LUA_MODULE_LED_STRIP
             bool "Enable LED strip Lua module"
             default y
@@ -229,6 +250,13 @@ menu "App Claw Config"
             help
                 Enable the system Lua module and keep app_claw's direct dependency
                 on lua_module_system when Lua capability is enabled.
+
+        config APP_CLAW_LUA_MODULE_UART
+            bool "Enable UART Lua module"
+            default y
+            help
+                Enable the UART Lua module and keep app_claw's direct dependency
+                on lua_module_uart when Lua capability is enabled.
 
         config APP_CLAW_LUA_MODULE_AUDIO
             bool "Enable audio Lua module"

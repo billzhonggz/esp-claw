@@ -80,6 +80,35 @@ static inline const char *app_config_field_cptr(const app_config_t *config, cons
     return (const char *)config + field->offset;
 }
 
+static void app_config_apply_legacy_llm_profile(app_config_t *config)
+{
+    char legacy_provider[32] = {0};
+
+    if (!config) {
+        return;
+    }
+
+    if (config->llm_profile[0] != '\0') {
+        return;
+    }
+
+    if (settings_store_get_string("llm_provider",
+                                  legacy_provider,
+                                  sizeof(legacy_provider),
+                                  "") != ESP_OK ||
+        legacy_provider[0] == '\0') {
+        return;
+    }
+
+    if (strcmp(legacy_provider, "qwen") == 0) {
+        strlcpy(config->llm_profile, "qwen_compatible", sizeof(config->llm_profile));
+    } else if (strcmp(legacy_provider, "deepseek") == 0) {
+        strlcpy(config->llm_profile, "custom_openai_compatible", sizeof(config->llm_profile));
+    } else if (strcmp(legacy_provider, "openai") == 0) {
+        strlcpy(config->llm_profile, "openai", sizeof(config->llm_profile));
+    }
+}
+
 esp_err_t app_config_init(void)
 {
     return settings_store_init(&(settings_store_config_t) {
@@ -120,6 +149,7 @@ esp_err_t app_config_load(app_config_t *config)
         }
     }
 
+    app_config_apply_legacy_llm_profile(config);
     return ESP_OK;
 }
 

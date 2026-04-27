@@ -117,6 +117,18 @@ dependencies:
       - if: $CONFIG{APP_CLAW_LUA_MODULE_BOARD_MANAGER} == True
     path: ../../lua_modules/lua_module_board_manager
 
+  lua_module_adc:
+    rules:
+      - if: $CONFIG{APP_CLAW_CAP_LUA} == True
+      - if: $CONFIG{APP_CLAW_LUA_MODULE_ADC} == True
+    path: ../../lua_modules/lua_module_adc
+
+  lua_module_call_capability:
+    rules:
+      - if: $CONFIG{APP_CLAW_CAP_LUA} == True
+      - if: $CONFIG{APP_CLAW_LUA_MODULE_CAPABILITY} == True
+    path: ../../lua_modules/lua_module_call_capability
+
   lua_module_button:
     rules:
       - if: $CONFIG{APP_CLAW_CAP_LUA} == True
@@ -160,6 +172,12 @@ dependencies:
       - if: $CONFIG{APP_CLAW_LUA_MODULE_GPIO} == True
     path: ../../lua_modules/lua_module_gpio
 
+  lua_module_i2c:
+    rules:
+      - if: $CONFIG{APP_CLAW_CAP_LUA} == True
+      - if: $CONFIG{APP_CLAW_LUA_MODULE_I2C} == True
+    path: ../../lua_modules/lua_module_i2c
+
   lua_module_lcd_touch:
     rules:
       - if: $CONFIG{APP_CLAW_CAP_LUA} == True
@@ -190,3 +208,9 @@ dependencies:
       - if: $CONFIG{APP_CLAW_CAP_LUA} == True
       - if: $CONFIG{APP_CLAW_LUA_MODULE_SYSTEM} == True
     path: ../../lua_modules/lua_module_system
+
+  lua_module_uart:
+    rules:
+      - if: $CONFIG{APP_CLAW_CAP_LUA} == True
+      - if: $CONFIG{APP_CLAW_LUA_MODULE_UART} == True
+    path: ../../lua_modules/lua_module_uart

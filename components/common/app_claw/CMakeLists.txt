@@ -90,8 +90,16 @@ if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_BOARD_MANAGER)
     list(APPEND app_claw_requires lua_module_board_manager)
 endif()
 
+if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_CAPABILITY)
+    list(APPEND app_claw_requires lua_module_call_capability)
+endif()
+
 if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_BUTTON)
     list(APPEND app_claw_requires lua_module_button)
+endif()
+
+if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_ADC)
+    list(APPEND app_claw_requires lua_module_adc)
 endif()
 
 if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_DELAY)
@@ -114,6 +122,10 @@ if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_GPIO)
     list(APPEND app_claw_requires lua_module_gpio)
 endif()
 
+if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_I2C)
+    list(APPEND app_claw_requires lua_module_i2c)
+endif()
+
 if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_LED_STRIP)
     list(APPEND app_claw_requires lua_module_led_strip)
 endif()
@@ -128,6 +140,10 @@ endif()
 
 if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_SYSTEM)
     list(APPEND app_claw_requires lua_module_system)
+endif()
+
+if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_UART)
+    list(APPEND app_claw_requires lua_module_uart)
 endif()
 
 if(CONFIG_APP_CLAW_CAP_LUA AND CONFIG_APP_CLAW_LUA_MODULE_AUDIO AND CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT)

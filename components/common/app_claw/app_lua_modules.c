@@ -16,11 +16,20 @@
 #if CONFIG_APP_CLAW_LUA_MODULE_DELAY
 #include "lua_module_delay.h"
 #endif
+#if CONFIG_APP_CLAW_LUA_MODULE_CAPABILITY
+#include "lua_module_capability.h"
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_ADC
+#include "lua_module_adc.h"
+#endif
 #if CONFIG_APP_CLAW_LUA_MODULE_EVENT_PUBLISHER
 #include "lua_module_event_publisher.h"
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_GPIO
 #include "lua_module_gpio.h"
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_I2C
+#include "lua_module_i2c.h"
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_LED_STRIP
 #include "lua_module_led_strip.h"
@@ -42,6 +51,9 @@
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_MCPWM
 #include "lua_module_mcpwm.h"
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_UART
+#include "lua_module_uart.h"
 #endif
 
 #if CONFIG_APP_CLAW_LUA_MODULE_AUDIO && defined(CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT)
@@ -187,6 +199,22 @@ static esp_err_t app_lua_register_delay(const char *fatfs_base_path)
 }
 #endif
 
+#if CONFIG_APP_CLAW_LUA_MODULE_CAPABILITY
+static esp_err_t app_lua_register_capability(const char *fatfs_base_path)
+{
+    (void)fatfs_base_path;
+    return lua_module_capability_register();
+}
+#endif
+
+#if CONFIG_APP_CLAW_LUA_MODULE_ADC
+static esp_err_t app_lua_register_adc(const char *fatfs_base_path)
+{
+    (void)fatfs_base_path;
+    return lua_module_adc_register();
+}
+#endif
+
 #if CONFIG_APP_CLAW_LUA_MODULE_EVENT_PUBLISHER
 static esp_err_t app_lua_register_event_publisher(const char *fatfs_base_path)
 {
@@ -200,6 +228,14 @@ static esp_err_t app_lua_register_gpio(const char *fatfs_base_path)
 {
     (void)fatfs_base_path;
     return lua_module_gpio_register();
+}
+#endif
+
+#if CONFIG_APP_CLAW_LUA_MODULE_I2C
+static esp_err_t app_lua_register_i2c(const char *fatfs_base_path)
+{
+    (void)fatfs_base_path;
+    return lua_module_i2c_register();
 }
 #endif
 
@@ -258,6 +294,14 @@ static esp_err_t app_lua_register_mcpwm(const char *fatfs_base_path)
 }
 #endif
 
+#if CONFIG_APP_CLAW_LUA_MODULE_UART
+static esp_err_t app_lua_register_uart(const char *fatfs_base_path)
+{
+    (void)fatfs_base_path;
+    return lua_module_uart_register();
+}
+#endif
+
 #if CONFIG_APP_CLAW_LUA_MODULE_AUDIO && defined(CONFIG_ESP_BOARD_DEV_AUDIO_CODEC_SUPPORT)
 static esp_err_t app_lua_register_audio(const char *fatfs_base_path)
 {
@@ -291,6 +335,12 @@ static esp_err_t app_lua_register_camera(const char *fatfs_base_path)
 #endif
 
 static const app_lua_module_entry_t s_lua_module_entries[] = {
+#if CONFIG_APP_CLAW_LUA_MODULE_ADC
+    { "adc", "ADC", app_lua_register_adc },
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_CAPABILITY
+    { "capability", "Capability", app_lua_register_capability },
+#endif
 #if CONFIG_APP_CLAW_LUA_MODULE_DELAY
     { "delay", "Delay", app_lua_register_delay },
 #endif
@@ -299,6 +349,9 @@ static const app_lua_module_entry_t s_lua_module_entries[] = {
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_GPIO
     { "gpio", "GPIO", app_lua_register_gpio },
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_I2C
+    { "i2c", "I2C", app_lua_register_i2c },
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_LED_STRIP
     { "led_strip", "LED Strip", app_lua_register_led_strip },
@@ -330,12 +383,21 @@ static const app_lua_module_entry_t s_lua_module_entries[] = {
 #if CONFIG_APP_CLAW_LUA_MODULE_MCPWM
     { "mcpwm", "MCPWM", app_lua_register_mcpwm },
 #endif
+#if CONFIG_APP_CLAW_LUA_MODULE_UART
+    { "uart", "UART", app_lua_register_uart },
+#endif
 #if CONFIG_APP_CLAW_LUA_MODULE_EVENT_PUBLISHER
     { "event_publisher", "Event Publisher", app_lua_register_event_publisher },
 #endif
 };
 
 static const app_lua_module_info_t s_lua_module_infos[] = {
+#if CONFIG_APP_CLAW_LUA_MODULE_ADC
+    { "adc", "ADC" },
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_CAPABILITY
+    { "capability", "Capability" },
+#endif
 #if CONFIG_APP_CLAW_LUA_MODULE_DELAY
     { "delay", "Delay" },
 #endif
@@ -344,6 +406,9 @@ static const app_lua_module_info_t s_lua_module_infos[] = {
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_GPIO
     { "gpio", "GPIO" },
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_I2C
+    { "i2c", "I2C" },
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_LED_STRIP
     { "led_strip", "LED Strip" },
@@ -374,6 +439,9 @@ static const app_lua_module_info_t s_lua_module_infos[] = {
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_MCPWM
     { "mcpwm", "MCPWM" },
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_UART
+    { "uart", "UART" },
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_EVENT_PUBLISHER
     { "event_publisher", "Event Publisher" },

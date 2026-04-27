@@ -143,6 +143,10 @@ static const char *app_llm_provider_name(const app_claw_config_t *config)
          strcmp(config->llm_profile, "qwen_compatible") == 0)) {
         return "Qwen Compatible";
     }
+    if (config->llm_base_url[0] &&
+        strcmp(config->llm_base_url, "https://api.deepseek.com") == 0) {
+        return "DeepSeek";
+    }
     if (config->llm_profile[0] && strcmp(config->llm_profile, "openai") == 0) {
         return "OpenAI";
     }
@@ -333,6 +337,10 @@ esp_err_t app_claw_start(const app_claw_config_t *config,
                             TAG, "Failed to add Lua async jobs provider");
         ESP_RETURN_ON_ERROR(claw_core_add_completion_observer(cap_lua_honesty_observe_completion, NULL),
                             TAG, "Failed to install Lua honesty observer");
+#endif
+#if CONFIG_APP_CLAW_CAP_TIME
+        ESP_RETURN_ON_ERROR(claw_core_add_context_provider(&cap_time_context_provider),
+                            TAG, "Failed to add time context provider");
 #endif
 
         ESP_RETURN_ON_ERROR(claw_core_start(), TAG, "Failed to start claw_core");
